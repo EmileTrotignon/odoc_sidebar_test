@@ -773,46 +773,88 @@ td.def-doc *:first-child {
 
 /* Sidebar and TOC */
 
-.odoc-toc:before {
-  display: block;
-  content: "Contents";
-  text-transform: uppercase;
-  font-size: 1em;
-  margin: 1.414em 0 0.5em;
-  font-weight: 500;
-  color: var(--toc-before-color);
-  line-height: 1.2;
-}
-
-.odoc-toc {
+.odoc-sidebar {
   grid-row-start: 3;
   grid-row-end: 5;
   grid-column: 1;
-}
+  --toc-top: 20px;
+  width: 28ex;
+  color: var(--toc-color);
+  height: fit-content;
+  position:sticky;
+  max-height: calc(100vh - 2 * var(--toc-top));
+  top: var(--toc-top);
 
-.odoc-navbar {
-  grid-row-start: 3;
-  grid-row-end: 5;
-  grid-column: 3;
+  display: flex;
+  flex-flow: column nowrap;
 
-  &:before {
-    display: block;
-    content: "Modules";
-    text-transform: uppercase;
-    font-size: 1em;
-    margin: 1.414em 0 0.5em;
-    font-weight: 500;
-    color: var(--toc-before-color);
-    line-height: 1.2;
+  .odoc-sidebar-elt {
+    background: var(--toc-background);
+    overflow: auto;
+    padding-left: 2ex;
+    padding-right: 2ex;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+    border: solid 1px var(--border);
+    border-radius: 5px;
+    margin-bottom: 1ex;
+    overflow: auto;
+    flex-shrink: 1;
+
+    &:before {
+      display: block;
+      text-transform: uppercase;
+      font-size: 1em;
+      margin-bottom: 0.5em;
+      font-weight: 500;
+      color: var(--toc-before-color);
+      line-height: 1.2;
+    }
+
+    &.odoc-toc {
+      flex-shrink: 100;
+    }
   }
+
+  .odoc-toc:before {
+    content: "Contents";
+    
+  }
+  
+  .odoc-navbar:before {
+    content: "Modules";
+    }
+
+  ul {
+    margin: 0;
+  }
+
+  ul li a {
+    font-family: "Fira Sans", sans-serif;
+    font-size: 0.95em;
+    color: var(--color);
+    font-weight: 400;
+    line-height: 1.6em;
+    display: inline;
+    grid-column: 2;
+    .toc-module {
+      color: var(--link-color);
+    }
+  }
+
+
   
   li {
     list-style-type: none;
   }
 
+  ul li a:hover {
+    box-shadow: none;
+    text-decoration: underline;
+  }
+
   .odoc-nav-current:before {
     content: ">";
-    color: var(--toc-list-border);
     display: inline-block;
     margin-left: -1ex;
     width: 1ex;
@@ -825,38 +867,6 @@ td.def-doc *:first-child {
   top: var(--toc-top)
 }
 
-.odoc-sidebar {
-  /* TODO : make this smaller if there is no search bar */
-  --toc-top: 20px;
-  width: 28ex;
-  background: var(--toc-background);
-  overflow: auto;
-  color: var(--toc-color);
-  padding-left: 2ex;
-  padding-right: 2ex;
-
-  height: fit-content;
-  border: solid 1px var(--border);
-  border-radius: 5px;
-  position:sticky;
-  max-height: calc(100vh - 2 * var(--toc-top));
-  top: var(--toc-top)
-}
-
-.odoc-sidebar ul li a {
-  font-family: "Fira Sans", sans-serif;
-  font-size: 0.95em;
-  color: var(--color);
-  font-weight: 400;
-  line-height: 1.6em;
-  display: inline;
-  grid-column: 2;
-}
-
-.odoc-sidebar ul li a:hover {
-  box-shadow: none;
-  text-decoration: underline;
-}
 
 :root {
   --search-bar-height: 25px;

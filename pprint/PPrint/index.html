@@ -16,46 +16,52 @@
    <header class="odoc-preamble">
       <h1>Module <code><span>PPrint</span></code></h1>
       <p><code>PPrint</code> is an OCaml library for <b>pretty-printing textual documents</b>. It takes care of
-         <b>indentation and line breaks</b>, and is typically used to <b>pretty-print code</b>.</p>
+         <b>indentation and line breaks</b>, and is typically used to <b>pretty-print code</b>.
+      </p>
    </header>
-   <nav class="odoc-sidebar odoc-toc">
-      <ul>
-         <li><a href="#building">Building Documents</a>
-            <ul>
-               <li><a href="#atomic-documents">Atomic Documents</a></li>
-               <li><a href="#blanks-and-newlines">Blanks and Newlines</a></li>
-               <li><a href="#composite-documents">Composite Documents</a></li>
-            </ul>
-         </li>
-         <li><a href="#inspecting">Inspecting Documents</a></li>
-         <li><a href="#rendering">Rendering Documents</a></li>
-         <li><a href="#defining">Defining Custom Documents</a></li>
-         <li><a href="#combinators">High-Level Combinators</a>
-            <ul>
-               <li><a href="#single-characters">Single Characters</a></li>
-               <li><a href="#delimiters">Delimiters</a></li>
-               <li><a href="#repetition">Repetition</a></li>
-               <li><a href="#lists-and-options">Lists and Options</a></li>
-               <li><a href="#text">Text</a></li>
-               <li><a href="#alignment-and-indentation">Alignment and Indentation</a></li>
-               <li><a href="#short-hands">Short-Hands</a></li>
-            </ul>
-         </li>
-         <li><a href="#ocaml">Printing OCaml Values</a></li>
-      </ul>
-   </nav>
-   <nav class=" odoc-sidebar odoc-navbar">
-      <ul>
-         <li class="odoc-nav-current"><a href="index.html">PPrint</a></li>
-         <li>
-            <ul>
-               <li><a href="OCaml/index.html">OCaml</a></li>
-               <li><a href="ToBuffer/index.html">ToBuffer</a></li>
-               <li><a href="ToChannel/index.html">ToChannel</a></li>
-               <li><a href="ToFormatter/index.html">ToFormatter</a></li>
-            </ul>
-         </li>
-      </ul>
+   <nav class="odoc-sidebar">
+      <nav class=" odoc-sidebar-elt odoc-navbar">
+         <ul>
+            <li class="odoc-nav-current"><a href="index.html">PPrint</a></li>
+         </ul>
+      </nav>
+      <nav class="odoc-sidebar-elt odoc-toc">
+         <ul>
+            <li><a href="#building">Building Documents</a>
+               <ul>
+                  <li><a href="#atomic-documents">Atomic Documents</a></li>
+                  <li><a href="#blanks-and-newlines">Blanks and Newlines</a></li>
+                  <li><a href="#composite-documents">Composite Documents</a></li>
+               </ul>
+            </li>
+            <li><a href="#inspecting">Inspecting Documents</a></li>
+            <li><a href="#rendering">Rendering Documents</a>
+               <ul>
+                <li><a  href="ToBuffer/index.html">module <span class="toc-module">ToBuffer</span></a></li>
+                <li><a  href="ToChannel/index.html">module <span class="toc-module">ToChannel</span></a></li>
+                <li><a  href="ToFormatter/index.html">module <span class="toc-module">ToFormatter</span></a></li>
+               </ul>
+            </li>
+            <li><a href="#defining">Defining Custom Documents</a></li>
+            <li><a href="#combinators">High-Level Combinators</a>
+               <ul>
+                  <li><a href="#single-characters">Single Characters</a></li>
+                  <li><a href="#delimiters">Delimiters</a></li>
+                  <li><a href="#repetition">Repetition</a></li>
+                  <li><a href="#lists-and-options">Lists and Options</a></li>
+                  <li><a href="#text">Text</a></li>
+                  <li><a href="#alignment-and-indentation">Alignment and Indentation</a></li>
+                  <li><a href="#short-hands">Short-Hands</a></li>
+               </ul>
+            </li>
+            <li><a href="#ocaml">Printing OCaml Values</a>
+               <ul>
+                  <li><a  href="OCaml/index.html">module <span class="toc-module">OCaml</span></a></li>
+               </ul>
+            </li>
+         </ul>
+      </nav>
+      
    </nav>
    <div class="odoc-content">
       <h2 id="building"><a href="#building" class="anchor"></a>Building Documents</h2>
@@ -93,7 +99,8 @@
                not contain a newline. The printing engine assumes that the ideal width of this string is
                <code>String.length s</code>. This assumption is safe if this is an ASCII string. Otherwise, <a
                   href="#val-fancystring"><code>fancystring</code></a> or <a
-                  href="#val-utf8string"><code>utf8string</code></a> should be preferred.</p>
+                  href="#val-utf8string"><code>utf8string</code></a> should be preferred.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -105,7 +112,8 @@
                <code>s</code> delimited by the offset <code>ofs</code> and the length <code>len</code>. This portion
                must not contain a newline. <code>substring s ofs len</code> is equivalent to
                <code>string (String.sub s ofs len)</code>, but is expected to be more efficient, as the substring is not
-               actually extracted.</p>
+               actually extracted.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -117,7 +125,8 @@
                string must not contain a newline. The string may contain fancy characters: color escape characters,
                UTF-8 characters, etc. Thus, its apparent length (which measures how many columns the text will take up
                on screen) differs from its length in bytes. The printing engine assumes that its apparent length is
-               <code>alen</code>.</p>
+               <code>alen</code>.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -137,7 +146,8 @@
             <p><code>utf8string s</code> is an atomic document that consists of the UTF-8-encoded string <code>s</code>.
                This string must not contain a newline. <code>utf8string s</code> is equivalent to
                <code>fancystring s (utf8_length s)</code>, where <code>utf8_length s</code> is the apparent length of
-               the UTF-8-encoded string <code>s</code>.</p>
+               the UTF-8-encoded string <code>s</code>.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -146,7 +156,8 @@
          </div>
          <div class="spec-doc">
             <p><code>utf8format format &lt;args&gt;...</code> is equivalent to
-               <code>utf8string (Printf.sprintf format &lt;args&gt;...)</code>.</p>
+               <code>utf8string (Printf.sprintf format &lt;args&gt;...)</code>.
+            </p>
          </div>
       </div>
       <h3 id="blanks-and-newlines"><a href="#blanks-and-newlines" class="anchor"></a>Blanks and Newlines</h3>
@@ -189,7 +200,8 @@
             <p>The document <code>break n</code> is a breakable blank of width <code>n</code>. It produces
                <code>n</code> blank characters if the printing engine is in flat mode, and a single newline character if
                the printing engine is in normal mode. <code>break 1</code> is equivalent to
-               <code>ifflat (blank 1) hardline</code>.</p>
+               <code>ifflat (blank 1) hardline</code>.
+            </p>
          </div>
       </div>
       <h3 id="composite-documents"><a href="#composite-documents" class="anchor"></a>Composite Documents</h3>
@@ -235,7 +247,8 @@
                level is as follows: every time a newline character is emitted, it is immediately followed by
                <code>n</code> blank characters, where <code>n</code> is the current indentation level. Thus, one may
                think of <code>nest j doc</code> roughly as the document <code>doc</code> in which <code>j</code> blank
-               characters have been inserted after every newline character.</p>
+               characters have been inserted after every newline character.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -287,7 +300,8 @@
                constructing empty documents, such as <code>empty</code>, <code>empty ^^ empty</code>,
                <code>nest j empty</code>, and so on, are recognized as such. However, a document constructed by <a
                   href="#val-custom"><code>custom</code></a> or <a href="#val-range"><code>range</code></a> is never
-               considered empty.</p>
+               considered empty.
+            </p>
          </div>
       </div>
       <h2 id="rendering"><a href="#rendering" class="anchor"></a>Rendering Documents</h2>
@@ -339,7 +353,8 @@
          methods. The method <code>requirement</code> must compute the ideal width of the custom document. The methods
          <code>pretty</code> and <code>compact</code> must render the custom document. For this purpose, they have
          access to the <a href="class-type-output/index.html" title="output">output channel</a> and to the <a
-            href="#type-state" title="state">state</a> of the printing engine.</p>
+            href="#type-state" title="state">state</a> of the printing engine.
+      </p>
       <div class="odoc-spec">
          <div class="spec type anchored" id="type-requirement"><a href="#type-requirement"
                class="anchor"></a><code><span><span class="keyword">type</span> requirement</span><span> = int</span></code>
@@ -440,7 +455,8 @@
             href="#val-pretty"><code>pretty</code></a> to the document <code>blank n</code> is a simple way of printing
          <code>n</code> blank characters. In the case of a composite document (one that contains subdocuments), these
          functions are essential: they allow computing the width requirement of a subdocument and displaying a
-         subdocument.</p>
+         subdocument.
+      </p>
       <div class="odoc-spec">
          <div class="spec value anchored" id="val-requirement"><a href="#val-requirement"
                class="anchor"></a><code><span><span class="keyword">val</span> requirement : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-requirement">requirement</a></span></code>
@@ -466,14 +482,16 @@
          </div>
          <div class="spec-doc">
             <p><code>compact output doc</code> prints the document <code>doc</code>. See the documentation of the method
-               <code>compact</code> in the class <a href="class-type-custom/index.html"><code>custom</code></a>.</p>
+               <code>compact</code> in the class <a href="class-type-custom/index.html"><code>custom</code></a>.
+            </p>
          </div>
       </div>
       <h2 id="combinators"><a href="#combinators" class="anchor"></a>High-Level Combinators</h2>
       <h3 id="single-characters"><a href="#single-characters" class="anchor"></a>Single Characters</h3>
       <p>The following atomic documents consist of a single character. Each of them is a synonym for the application of
          <a href="#val-char"><code>char</code></a> to some constant character. For instance, <a
-            href="#val-lparen"><code>lparen</code></a> is a synonym for <code>char '('</code>.</p>
+            href="#val-lparen"><code>lparen</code></a> is a synonym for <code>char '('</code>.
+      </p>
       <div class="odoc-spec">
          <div class="spec value anchored" id="val-lparen"><a href="#val-lparen"
                class="anchor"></a><code><span><span class="keyword">val</span> lparen : <a href="#type-document">document</a></span></code>
@@ -660,7 +678,8 @@
          </div>
       </div>
       <p>The following combinators enclose a document within a pair of delimiters. They are partial applications of
-         <code>enclose</code>. No whitespace or line break is introduced.</p>
+         <code>enclose</code>. No whitespace or line break is introduced.
+      </p>
       <div class="odoc-spec">
          <div class="spec value anchored" id="val-squotes"><a href="#val-squotes"
                class="anchor"></a><code><span><span class="keyword">val</span> squotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
@@ -703,7 +722,8 @@
          </div>
          <div class="spec-doc">
             <p><code>twice doc</code> is the document obtained by concatenating two copies of the document
-               <code>doc</code>.</p>
+               <code>doc</code>.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -712,7 +732,8 @@
          </div>
          <div class="spec-doc">
             <p><code>repeat n doc</code> is the document obtained by concatenating <code>n</code> copies of the document
-               <code>doc</code>.</p>
+               <code>doc</code>.
+            </p>
          </div>
       </div>
       <h3 id="lists-and-options"><a href="#lists-and-options" class="anchor"></a>Lists and Options</h3>
@@ -756,7 +777,8 @@
          <div class="spec-doc">
             <p><code>separate2 sep last_sep docs</code> is the concatenation of the documents in the list
                <code>docs</code>. The separator <code>sep</code> is inserted between every two adjacent documents,
-               except between the last two documents, where the separator <code>last_sep</code> is used instead.</p>
+               except between the last two documents, where the separator <code>last_sep</code> is used instead.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -765,7 +787,8 @@
          </div>
          <div class="spec-doc">
             <p><code>optional f None</code> is the empty document. <code>optional f (Some x)</code> is the document
-               <code>f x</code>.</p>
+               <code>f x</code>.
+            </p>
          </div>
       </div>
       <h3 id="text"><a href="#text" class="anchor"></a>Text</h3>
@@ -818,7 +841,8 @@
                <code>sep</code> and arranges for a new line to begin whenever a document does not fit on the current
                line. This is useful for typesetting free-flowing, ragged-right text. A typical choice of
                <code>sep</code> is <code>break b</code>, where <code>b</code> is the number of spaces that must be
-               inserted between two consecutive words (when displayed on the same line).</p>
+               inserted between two consecutive words (when displayed on the same line).
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -861,7 +885,8 @@
   right</code></pre>
             <p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter
                <code>b</code> controls the number of spaces between <code>left</code> and <code>right</code> (when
-               flat).</p>
+               flat).
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -884,7 +909,8 @@
   right</code></pre>
             <p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter
                <code>b</code> controls the number of spaces between <code>left</code> and <code>middle</code> (always)
-               and between <code>middle</code> and <code>right</code> (when flat).</p>
+               and between <code>middle</code> and <code>right</code> (when flat).
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -900,7 +926,8 @@
   closing</code></pre>
             <p>The parameter <code>n</code> controls the nesting of <code>contents</code> (when not flat). The parameter
                <code>b</code> controls the number of spaces between <code>opening</code> and <code>contents</code> and
-               between <code>contents</code> and <code>closing</code> (when flat).</p>
+               between <code>contents</code> and <code>closing</code> (when flat).
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -914,7 +941,8 @@
                layout (where <code>opening</code>, <code>contents</code>, and <code>closing</code> appear on separate
                lines). It tries to place the beginning of <code>contents</code> on the same line as
                <code>opening</code>, and to place <code>closing</code> on the same line as the end of
-               <code>contents</code>, if possible.</p>
+               <code>contents</code>, if possible.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -931,7 +959,8 @@
          <div class="spec-doc">
             <p><code>surround_separate n b void opening sep closing docs</code> is equivalent to
                <code>surround n b opening (separate sep docs) closing</code>, except when the list <code>docs</code> is
-               empty, in which case it reduces to <code>void</code>.</p>
+               empty, in which case it reduces to <code>void</code>.
+            </p>
          </div>
       </div>
       <div class="odoc-spec">
@@ -948,7 +977,8 @@
   <a href="#type-document">document</a></span></code></div>
          <div class="spec-doc">
             <p><code>surround_separate_map n b void opening sep closing f xs</code> is equivalent to
-               <code>surround_separate n b void opening sep closing (List.map f xs)</code>.</p>
+               <code>surround_separate n b void opening sep closing (List.map f xs)</code>.
+            </p>
          </div>
       </div>
       <h3 id="short-hands"><a href="#short-hands" class="anchor"></a>Short-Hands</h3>
