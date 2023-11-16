@@ -269,9 +269,9 @@ body {
 }
 
 body.odoc {
-  max-width: 132ex;
+  max-width: fit-content;
   display: grid;
-  grid-template-columns: min-content 1fr;
+  grid-template-columns: min-content 100ex min-content;
   column-gap: 4ex;
   row-gap: 2ex;
 }
@@ -784,13 +784,48 @@ td.def-doc *:first-child {
   line-height: 1.2;
 }
 
-.odoc-search + * + .odoc-toc {
+.odoc-toc {
+  grid-row-start: 3;
+  grid-row-end: 5;
+  grid-column: 1;
+}
+
+.odoc-navbar {
+  grid-row-start: 3;
+  grid-row-end: 5;
+  grid-column: 3;
+
+  &:before {
+    display: block;
+    content: "Modules";
+    text-transform: uppercase;
+    font-size: 1em;
+    margin: 1.414em 0 0.5em;
+    font-weight: 500;
+    color: var(--toc-before-color);
+    line-height: 1.2;
+  }
+  
+  li {
+    list-style-type: none;
+  }
+
+  .odoc-nav-current:before {
+    content: ">";
+    color: var(--toc-list-border);
+    display: inline-block;
+    margin-left: -1ex;
+    width: 1ex;
+  }
+}
+
+.odoc-search + * + .odoc-sidebar {
   --toc-top: calc(var(--search-bar-height) + var(--search-padding-top) + 20px);
   max-height: calc(100vh - 2 * var(--toc-top));
   top: var(--toc-top)
 }
 
-.odoc-toc {
+.odoc-sidebar {
   /* TODO : make this smaller if there is no search bar */
   --toc-top: 20px;
   width: 28ex;
@@ -799,9 +834,7 @@ td.def-doc *:first-child {
   color: var(--toc-color);
   padding-left: 2ex;
   padding-right: 2ex;
-  grid-row-start: 3;
-  grid-row-end: 5;
-  grid-column: 1;
+
   height: fit-content;
   border: solid 1px var(--border);
   border-radius: 5px;
@@ -810,13 +843,14 @@ td.def-doc *:first-child {
   top: var(--toc-top)
 }
 
-.odoc-toc ul li a {
+.odoc-sidebar ul li a {
   font-family: "Fira Sans", sans-serif;
   font-size: 0.95em;
   color: var(--color);
   font-weight: 400;
   line-height: 1.6em;
-  display: block;
+  display: inline;
+  grid-column: 2;
 }
 
 .odoc-sidebar ul li a:hover {
@@ -1098,27 +1132,27 @@ td.def-doc *:first-child {
 
 /* First level titles */
 
-.odoc-toc>ul>li>a {
+.odoc-sidebar>ul>li>a {
   font-weight: 500;
 }
 
-.odoc-toc li ul {
+.odoc-sidebar li ul {
   margin: 0px;
 }
 
-.odoc-toc ul {
+.odoc-sidebar ul {
   list-style-type: none;
 }
 
-.odoc-toc ul li {
+.odoc-sidebar ul li {
   margin: 0;
 }
 
-.odoc-toc>ul>li {
+.odoc-sidebar>ul>li {
   margin-bottom: 0.3em;
 }
 
-.odoc-toc ul li li {
+.odoc-sidebar ul li li {
   border-left: 1px solid var(--toc-list-border);
   margin-left: 5px;
   padding-left: 12px;

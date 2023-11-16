@@ -1,15 +1,925 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>PPrint (pprint.PPrint)</title><link rel="stylesheet" href="../../_odoc_support/odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc %%VERSION%%"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../_odoc_support/highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – <a href="../index.html">pprint</a> &#x00BB; PPrint</nav><header class="odoc-preamble"><h1>Module <code><span>PPrint</span></code></h1><p><code>PPrint</code> is an OCaml library for <b>pretty-printing textual documents</b>. It takes care of <b>indentation and line breaks</b>, and is typically used to <b>pretty-print code</b>.</p></header><nav class="odoc-toc"><ul><li><a href="#building">Building Documents</a><ul><li><a href="#atomic-documents">Atomic Documents</a></li><li><a href="#blanks-and-newlines">Blanks and Newlines</a></li><li><a href="#composite-documents">Composite Documents</a></li></ul></li><li><a href="#inspecting">Inspecting Documents</a></li><li><a href="#rendering">Rendering Documents</a></li><li><a href="#defining">Defining Custom Documents</a></li><li><a href="#combinators">High-Level Combinators</a><ul><li><a href="#single-characters">Single Characters</a></li><li><a href="#delimiters">Delimiters</a></li><li><a href="#repetition">Repetition</a></li><li><a href="#lists-and-options">Lists and Options</a></li><li><a href="#text">Text</a></li><li><a href="#alignment-and-indentation">Alignment and Indentation</a></li><li><a href="#short-hands">Short-Hands</a></li></ul></li><li><a href="#ocaml">Printing OCaml Values</a></li></ul></nav><div class="odoc-content"><h2 id="building"><a href="#building" class="anchor"></a>Building Documents</h2><div class="odoc-spec"><div class="spec type anchored" id="type-document"><a href="#type-document" class="anchor"></a><code><span><span class="keyword">type</span> document</span></code></div><div class="spec-doc"><p>The abstract type of documents.</p></div></div><h3 id="atomic-documents"><a href="#atomic-documents" class="anchor"></a>Atomic Documents</h3><div class="odoc-spec"><div class="spec value anchored" id="val-empty"><a href="#val-empty" class="anchor"></a><code><span><span class="keyword">val</span> empty : <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>empty</code> is the empty document.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-char"><a href="#val-char" class="anchor"></a><code><span><span class="keyword">val</span> char : <span>char <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>char c</code> is an atomic document that consists of the single character <code>c</code>. This character must not be a newline character.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-string"><a href="#val-string" class="anchor"></a><code><span><span class="keyword">val</span> string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>string s</code> is an atomic document that consists of the string <code>s</code>. This string must not contain a newline. The printing engine assumes that the ideal width of this string is <code>String.length s</code>. This assumption is safe if this is an ASCII string. Otherwise, <a href="#val-fancystring"><code>fancystring</code></a> or <a href="#val-utf8string"><code>utf8string</code></a> should be preferred.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-substring"><a href="#val-substring" class="anchor"></a><code><span><span class="keyword">val</span> substring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>substring s ofs len</code> is an atomic document that consists of the portion of the string <code>s</code> delimited by the offset <code>ofs</code> and the length <code>len</code>. This portion must not contain a newline. <code>substring s ofs len</code> is equivalent to <code>string (String.sub s ofs len)</code>, but is expected to be more efficient, as the substring is not actually extracted.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fancystring"><a href="#val-fancystring" class="anchor"></a><code><span><span class="keyword">val</span> fancystring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>fancystring s alen</code> is an atomic document that consists of the string <code>s</code>. This string must not contain a newline. The string may contain fancy characters: color escape characters, UTF-8 characters, etc. Thus, its apparent length (which measures how many columns the text will take up on screen) differs from its length in bytes. The printing engine assumes that its apparent length is <code>alen</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fancysubstring"><a href="#val-fancysubstring" class="anchor"></a><code><span><span class="keyword">val</span> fancysubstring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>fancysubstring s ofs len alen</code> is equivalent to <code>fancystring (String.sub
-   s ofs len) alen</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-utf8string"><a href="#val-utf8string" class="anchor"></a><code><span><span class="keyword">val</span> utf8string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>utf8string s</code> is an atomic document that consists of the UTF-8-encoded string <code>s</code>. This string must not contain a newline. <code>utf8string s</code> is equivalent to <code>fancystring s (utf8_length s)</code>, where <code>utf8_length s</code> is the apparent length of the UTF-8-encoded string <code>s</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-utf8format"><a href="#val-utf8format" class="anchor"></a><code><span><span class="keyword">val</span> utf8format : <span><span><span>(<span class="type-var">'a</span>, unit, string, <a href="#type-document">document</a>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span> <span class="type-var">'a</span></span></code></div><div class="spec-doc"><p><code>utf8format format &lt;args&gt;...</code> is equivalent to <code>utf8string (Printf.sprintf format &lt;args&gt;...)</code>.</p></div></div><h3 id="blanks-and-newlines"><a href="#blanks-and-newlines" class="anchor"></a>Blanks and Newlines</h3><div class="odoc-spec"><div class="spec value anchored" id="val-hardline"><a href="#val-hardline" class="anchor"></a><code><span><span class="keyword">val</span> hardline : <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>The atomic document <code>hardline</code> represents a forced newline. This document has infinite ideal width: thus, if there is a choice between printing it in flat mode and printing it in normal mode, normal mode is preferred. In other words, when <code>hardline</code> is placed directly inside a group, this group is dissolved: <code>group hardline</code> is equivalent to <code>hardline</code>. This combinator should be seldom used; consider using <a href="#val-break"><code>break</code></a> instead.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-blank"><a href="#val-blank" class="anchor"></a><code><span><span class="keyword">val</span> blank : <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>The atomic document <code>blank n</code> consists of <code>n</code> blank characters. A blank character is like an ordinary ASCII space character <code>char ' '</code>, except that blank characters that appear at the end of a line are automatically suppressed.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-space"><a href="#val-space" class="anchor"></a><code><span><span class="keyword">val</span> space : <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>space</code> is a synonym for <code>blank 1</code>. It consists of one blank character. It is therefore not equivalent to <code>char ' '</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-break"><a href="#val-break" class="anchor"></a><code><span><span class="keyword">val</span> break : <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>The document <code>break n</code> is a breakable blank of width <code>n</code>. It produces <code>n</code> blank characters if the printing engine is in flat mode, and a single newline character if the printing engine is in normal mode. <code>break 1</code> is equivalent to <code>ifflat (blank 1) hardline</code>.</p></div></div><h3 id="composite-documents"><a href="#composite-documents" class="anchor"></a>Composite Documents</h3><div class="odoc-spec"><div class="spec value anchored" id="val-(^^)"><a href="#val-(^^)" class="anchor"></a><code><span><span class="keyword">val</span> (^^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>doc1 ^^ doc2</code> is the concatenation of the documents <code>doc1</code> and <code>doc2</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-group"><a href="#val-group" class="anchor"></a><code><span><span class="keyword">val</span> group : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>group doc</code> encodes a choice. If the document <code>doc</code> fits on the current line, then it is rendered on a single line, in flat mode. (All <code>group</code> combinators inside it are then ignored.) Otherwise, this group is dissolved, and <code>doc</code> is rendered in normal mode. There might be more groups within <code>doc</code>, whose presence leads to further choices being explored.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ifflat"><a href="#val-ifflat" class="anchor"></a><code><span><span class="keyword">val</span> ifflat : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>ifflat doc1 doc2</code> is rendered as <code>doc1</code> if the printing engine is in flat mode, that is, if the printing engine has determined that some enclosing group fits on the current line. Otherwise, it is rendered as <code>doc2</code>. Use this combinator with caution! Because the printing engine is free to choose between <code>doc1</code> and <code>doc2</code>, these documents must be semantically equivalent. It is up to the user to enforce this property.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-nest"><a href="#val-nest" class="anchor"></a><code><span><span class="keyword">val</span> nest : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>To render the document <code>nest j doc</code>, the printing engine temporarily increases the current indentation level by <code>j</code>, then renders <code>doc</code>. The effect of the current indentation level is as follows: every time a newline character is emitted, it is immediately followed by <code>n</code> blank characters, where <code>n</code> is the current indentation level. Thus, one may think of <code>nest j doc</code> roughly as the document <code>doc</code> in which <code>j</code> blank characters have been inserted after every newline character.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-align"><a href="#val-align" class="anchor"></a><code><span><span class="keyword">val</span> align : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>To render <code>align doc</code>, the printing engine sets the current indentation level to the current column, then renders <code>doc</code>. In other words, the document <code>doc</code> is rendered within a box whose upper left corner is the current position of the printing engine.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-point"><a href="#type-point" class="anchor"></a><code><span><span class="keyword">type</span> point</span><span> = int * int</span></code></div><div class="spec-doc"><p>A point is a pair of a line number and a column number.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-range"><a href="#type-range" class="anchor"></a><code><span><span class="keyword">type</span> range</span><span> = <a href="#type-point">point</a> * <a href="#type-point">point</a></span></code></div><div class="spec-doc"><p>A range is a pair of points.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-range"><a href="#val-range" class="anchor"></a><code><span><span class="keyword">val</span> range : <span><span>(<span><a href="#type-range">range</a> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p>The document <code>range hook doc</code> is printed like the document <code>doc</code>, but allows the caller to register a hook that is applied, when the document is printed, to the range occupied by this document in the output text. This offers a way of mapping positions in the output text back to (sub)documents.</p></div></div><h2 id="inspecting"><a href="#inspecting" class="anchor"></a>Inspecting Documents</h2><p>Documents are abstract, and cannot be inspected. Nevertheless, it is possible to test whether a document is empty.</p><div class="odoc-spec"><div class="spec value anchored" id="val-is_empty"><a href="#val-is_empty" class="anchor"></a><code><span><span class="keyword">val</span> is_empty : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> bool</span></code></div><div class="spec-doc"><p><code>is_empty doc</code> determines whether the document <code>doc</code> is empty. Most ways of constructing empty documents, such as <code>empty</code>, <code>empty ^^ empty</code>, <code>nest j empty</code>, and so on, are recognized as such. However, a document constructed by <a href="#val-custom"><code>custom</code></a> or <a href="#val-range"><code>range</code></a> is never considered empty.</p></div></div><h2 id="rendering"><a href="#rendering" class="anchor"></a>Rendering Documents</h2><p>Three renderers are available. They offer the same API, described by the signature <a href="module-type-RENDERER/index.html"><code>RENDERER</code></a>, and differ only in the nature of the output channel that they use.</p><div class="odoc-spec"><div class="spec module-type anchored" id="module-type-RENDERER"><a href="#module-type-RENDERER" class="anchor"></a><code><span><span class="keyword">module</span> <span class="keyword">type</span> <a href="module-type-RENDERER/index.html">RENDERER</a></span><span> = <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>This signature describes the document renderers in a manner that is independent of the type of the output channel.</p></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-ToChannel"><a href="#module-ToChannel" class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToChannel/index.html">ToChannel</a></span><span> : 
-  <a href="module-type-RENDERER/index.html">RENDERER</a> <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-channel">channel</a> = <span class="xref-unresolved">Stdlib</span>.out_channel</span> <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code></div><div class="spec-doc"><p>This renderer sends its output into an output channel.</p></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-ToBuffer"><a href="#module-ToBuffer" class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToBuffer/index.html">ToBuffer</a></span><span> : 
-  <a href="module-type-RENDERER/index.html">RENDERER</a> <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-channel">channel</a> = <span class="xref-unresolved">Stdlib</span>.Buffer.t</span> <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code></div><div class="spec-doc"><p>This renderer sends its output into a memory buffer.</p></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-ToFormatter"><a href="#module-ToFormatter" class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToFormatter/index.html">ToFormatter</a></span><span> : 
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+   <title>PPrint (pprint.PPrint)</title>
+   <link rel="stylesheet" href="../../_odoc_support/odoc.css" />
+   <meta charset="utf-8" />
+   <meta name="generator" content="odoc %%VERSION%%" />
+   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+   <script src="../../_odoc_support/highlight.pack.js"></script>
+   <script>hljs.initHighlightingOnLoad();</script>
+</head>
+
+<body class="odoc">
+   <nav class="odoc-nav"><a href="../index.html">Up</a> – <a href="../index.html">pprint</a> &#x00BB; PPrint</nav>
+   <header class="odoc-preamble">
+      <h1>Module <code><span>PPrint</span></code></h1>
+      <p><code>PPrint</code> is an OCaml library for <b>pretty-printing textual documents</b>. It takes care of
+         <b>indentation and line breaks</b>, and is typically used to <b>pretty-print code</b>.</p>
+   </header>
+   <nav class="odoc-sidebar odoc-toc">
+      <ul>
+         <li><a href="#building">Building Documents</a>
+            <ul>
+               <li><a href="#atomic-documents">Atomic Documents</a></li>
+               <li><a href="#blanks-and-newlines">Blanks and Newlines</a></li>
+               <li><a href="#composite-documents">Composite Documents</a></li>
+            </ul>
+         </li>
+         <li><a href="#inspecting">Inspecting Documents</a></li>
+         <li><a href="#rendering">Rendering Documents</a></li>
+         <li><a href="#defining">Defining Custom Documents</a></li>
+         <li><a href="#combinators">High-Level Combinators</a>
+            <ul>
+               <li><a href="#single-characters">Single Characters</a></li>
+               <li><a href="#delimiters">Delimiters</a></li>
+               <li><a href="#repetition">Repetition</a></li>
+               <li><a href="#lists-and-options">Lists and Options</a></li>
+               <li><a href="#text">Text</a></li>
+               <li><a href="#alignment-and-indentation">Alignment and Indentation</a></li>
+               <li><a href="#short-hands">Short-Hands</a></li>
+            </ul>
+         </li>
+         <li><a href="#ocaml">Printing OCaml Values</a></li>
+      </ul>
+   </nav>
+   <nav class=" odoc-sidebar odoc-navbar">
+      <ul>
+         <li class="odoc-nav-current"><a href="index.html">PPrint</a></li>
+         <li>
+            <ul>
+               <li><a href="OCaml/index.html">OCaml</a></li>
+               <li><a href="ToBuffer/index.html">ToBuffer</a></li>
+               <li><a href="ToChannel/index.html">ToChannel</a></li>
+               <li><a href="ToFormatter/index.html">ToFormatter</a></li>
+            </ul>
+         </li>
+      </ul>
+   </nav>
+   <div class="odoc-content">
+      <h2 id="building"><a href="#building" class="anchor"></a>Building Documents</h2>
+      <div class="odoc-spec">
+         <div class="spec type anchored" id="type-document"><a href="#type-document"
+               class="anchor"></a><code><span><span class="keyword">type</span> document</span></code></div>
+         <div class="spec-doc">
+            <p>The abstract type of documents.</p>
+         </div>
+      </div>
+      <h3 id="atomic-documents"><a href="#atomic-documents" class="anchor"></a>Atomic Documents</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-empty"><a href="#val-empty"
+               class="anchor"></a><code><span><span class="keyword">val</span> empty : <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>empty</code> is the empty document.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-char"><a href="#val-char"
+               class="anchor"></a><code><span><span class="keyword">val</span> char : <span>char <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>char c</code> is an atomic document that consists of the single character <code>c</code>. This
+               character must not be a newline character.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-string"><a href="#val-string"
+               class="anchor"></a><code><span><span class="keyword">val</span> string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>string s</code> is an atomic document that consists of the string <code>s</code>. This string must
+               not contain a newline. The printing engine assumes that the ideal width of this string is
+               <code>String.length s</code>. This assumption is safe if this is an ASCII string. Otherwise, <a
+                  href="#val-fancystring"><code>fancystring</code></a> or <a
+                  href="#val-utf8string"><code>utf8string</code></a> should be preferred.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-substring"><a href="#val-substring"
+               class="anchor"></a><code><span><span class="keyword">val</span> substring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>substring s ofs len</code> is an atomic document that consists of the portion of the string
+               <code>s</code> delimited by the offset <code>ofs</code> and the length <code>len</code>. This portion
+               must not contain a newline. <code>substring s ofs len</code> is equivalent to
+               <code>string (String.sub s ofs len)</code>, but is expected to be more efficient, as the substring is not
+               actually extracted.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-fancystring"><a href="#val-fancystring"
+               class="anchor"></a><code><span><span class="keyword">val</span> fancystring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>fancystring s alen</code> is an atomic document that consists of the string <code>s</code>. This
+               string must not contain a newline. The string may contain fancy characters: color escape characters,
+               UTF-8 characters, etc. Thus, its apparent length (which measures how many columns the text will take up
+               on screen) differs from its length in bytes. The printing engine assumes that its apparent length is
+               <code>alen</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-fancysubstring"><a href="#val-fancysubstring"
+               class="anchor"></a><code><span><span class="keyword">val</span> fancysubstring : <span>string <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>fancysubstring s ofs len alen</code> is equivalent to <code>fancystring (String.sub
+   s ofs len) alen</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-utf8string"><a href="#val-utf8string"
+               class="anchor"></a><code><span><span class="keyword">val</span> utf8string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>utf8string s</code> is an atomic document that consists of the UTF-8-encoded string <code>s</code>.
+               This string must not contain a newline. <code>utf8string s</code> is equivalent to
+               <code>fancystring s (utf8_length s)</code>, where <code>utf8_length s</code> is the apparent length of
+               the UTF-8-encoded string <code>s</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-utf8format"><a href="#val-utf8format"
+               class="anchor"></a><code><span><span class="keyword">val</span> utf8format : <span><span><span>(<span class="type-var">'a</span>, unit, string, <a href="#type-document">document</a>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span> <span class="type-var">'a</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>utf8format format &lt;args&gt;...</code> is equivalent to
+               <code>utf8string (Printf.sprintf format &lt;args&gt;...)</code>.</p>
+         </div>
+      </div>
+      <h3 id="blanks-and-newlines"><a href="#blanks-and-newlines" class="anchor"></a>Blanks and Newlines</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-hardline"><a href="#val-hardline"
+               class="anchor"></a><code><span><span class="keyword">val</span> hardline : <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>The atomic document <code>hardline</code> represents a forced newline. This document has infinite ideal
+               width: thus, if there is a choice between printing it in flat mode and printing it in normal mode, normal
+               mode is preferred. In other words, when <code>hardline</code> is placed directly inside a group, this
+               group is dissolved: <code>group hardline</code> is equivalent to <code>hardline</code>. This combinator
+               should be seldom used; consider using <a href="#val-break"><code>break</code></a> instead.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-blank"><a href="#val-blank"
+               class="anchor"></a><code><span><span class="keyword">val</span> blank : <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>The atomic document <code>blank n</code> consists of <code>n</code> blank characters. A blank character
+               is like an ordinary ASCII space character <code>char ' '</code>, except that blank characters that appear
+               at the end of a line are automatically suppressed.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-space"><a href="#val-space"
+               class="anchor"></a><code><span><span class="keyword">val</span> space : <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>space</code> is a synonym for <code>blank 1</code>. It consists of one blank character. It is
+               therefore not equivalent to <code>char ' '</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-break"><a href="#val-break"
+               class="anchor"></a><code><span><span class="keyword">val</span> break : <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>The document <code>break n</code> is a breakable blank of width <code>n</code>. It produces
+               <code>n</code> blank characters if the printing engine is in flat mode, and a single newline character if
+               the printing engine is in normal mode. <code>break 1</code> is equivalent to
+               <code>ifflat (blank 1) hardline</code>.</p>
+         </div>
+      </div>
+      <h3 id="composite-documents"><a href="#composite-documents" class="anchor"></a>Composite Documents</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-(^^)"><a href="#val-(^^)"
+               class="anchor"></a><code><span><span class="keyword">val</span> (^^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>doc1 ^^ doc2</code> is the concatenation of the documents <code>doc1</code> and <code>doc2</code>.
+            </p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-group"><a href="#val-group"
+               class="anchor"></a><code><span><span class="keyword">val</span> group : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>group doc</code> encodes a choice. If the document <code>doc</code> fits on the current line, then
+               it is rendered on a single line, in flat mode. (All <code>group</code> combinators inside it are then
+               ignored.) Otherwise, this group is dissolved, and <code>doc</code> is rendered in normal mode. There
+               might be more groups within <code>doc</code>, whose presence leads to further choices being explored.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-ifflat"><a href="#val-ifflat"
+               class="anchor"></a><code><span><span class="keyword">val</span> ifflat : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>ifflat doc1 doc2</code> is rendered as <code>doc1</code> if the printing engine is in flat mode,
+               that is, if the printing engine has determined that some enclosing group fits on the current line.
+               Otherwise, it is rendered as <code>doc2</code>. Use this combinator with caution! Because the printing
+               engine is free to choose between <code>doc1</code> and <code>doc2</code>, these documents must be
+               semantically equivalent. It is up to the user to enforce this property.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-nest"><a href="#val-nest"
+               class="anchor"></a><code><span><span class="keyword">val</span> nest : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>To render the document <code>nest j doc</code>, the printing engine temporarily increases the current
+               indentation level by <code>j</code>, then renders <code>doc</code>. The effect of the current indentation
+               level is as follows: every time a newline character is emitted, it is immediately followed by
+               <code>n</code> blank characters, where <code>n</code> is the current indentation level. Thus, one may
+               think of <code>nest j doc</code> roughly as the document <code>doc</code> in which <code>j</code> blank
+               characters have been inserted after every newline character.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-align"><a href="#val-align"
+               class="anchor"></a><code><span><span class="keyword">val</span> align : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>To render <code>align doc</code>, the printing engine sets the current indentation level to the current
+               column, then renders <code>doc</code>. In other words, the document <code>doc</code> is rendered within a
+               box whose upper left corner is the current position of the printing engine.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec type anchored" id="type-point"><a href="#type-point"
+               class="anchor"></a><code><span><span class="keyword">type</span> point</span><span> = int * int</span></code>
+         </div>
+         <div class="spec-doc">
+            <p>A point is a pair of a line number and a column number.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec type anchored" id="type-range"><a href="#type-range"
+               class="anchor"></a><code><span><span class="keyword">type</span> range</span><span> = <a href="#type-point">point</a> * <a href="#type-point">point</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>A range is a pair of points.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-range"><a href="#val-range"
+               class="anchor"></a><code><span><span class="keyword">val</span> range : <span><span>(<span><a href="#type-range">range</a> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>The document <code>range hook doc</code> is printed like the document <code>doc</code>, but allows the
+               caller to register a hook that is applied, when the document is printed, to the range occupied by this
+               document in the output text. This offers a way of mapping positions in the output text back to
+               (sub)documents.</p>
+         </div>
+      </div>
+      <h2 id="inspecting"><a href="#inspecting" class="anchor"></a>Inspecting Documents</h2>
+      <p>Documents are abstract, and cannot be inspected. Nevertheless, it is possible to test whether a document is
+         empty.</p>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-is_empty"><a href="#val-is_empty"
+               class="anchor"></a><code><span><span class="keyword">val</span> is_empty : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> bool</span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>is_empty doc</code> determines whether the document <code>doc</code> is empty. Most ways of
+               constructing empty documents, such as <code>empty</code>, <code>empty ^^ empty</code>,
+               <code>nest j empty</code>, and so on, are recognized as such. However, a document constructed by <a
+                  href="#val-custom"><code>custom</code></a> or <a href="#val-range"><code>range</code></a> is never
+               considered empty.</p>
+         </div>
+      </div>
+      <h2 id="rendering"><a href="#rendering" class="anchor"></a>Rendering Documents</h2>
+      <p>Three renderers are available. They offer the same API, described by the signature <a
+            href="module-type-RENDERER/index.html"><code>RENDERER</code></a>, and differ only in the nature of the
+         output channel that they use.</p>
+      <div class="odoc-spec">
+         <div class="spec module-type anchored" id="module-type-RENDERER"><a href="#module-type-RENDERER"
+               class="anchor"></a><code><span><span class="keyword">module</span> <span class="keyword">type</span> <a href="module-type-RENDERER/index.html">RENDERER</a></span><span> = <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>This signature describes the document renderers in a manner that is independent of the type of the output
+               channel.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec module anchored" id="module-ToChannel"><a href="#module-ToChannel"
+               class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToChannel/index.html">ToChannel</a></span><span> : 
+  <a href="module-type-RENDERER/index.html">RENDERER</a> <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-channel">channel</a> = <span class="xref-unresolved">Stdlib</span>.out_channel</span> <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>This renderer sends its output into an output channel.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec module anchored" id="module-ToBuffer"><a href="#module-ToBuffer"
+               class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToBuffer/index.html">ToBuffer</a></span><span> : 
+  <a href="module-type-RENDERER/index.html">RENDERER</a> <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-channel">channel</a> = <span class="xref-unresolved">Stdlib</span>.Buffer.t</span> <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>This renderer sends its output into a memory buffer.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec module anchored" id="module-ToFormatter"><a href="#module-ToFormatter"
+               class="anchor"></a><code><span><span class="keyword">module</span> <a href="ToFormatter/index.html">ToFormatter</a></span><span> : 
   <a href="module-type-RENDERER/index.html">RENDERER</a>
     <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-channel">channel</a> = <span class="xref-unresolved">Stdlib</span>.Format.formatter</span>
-     <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code></div><div class="spec-doc"><p>This renderer sends its output into a formatter channel.</p></div></div><h2 id="defining"><a href="#defining" class="anchor"></a>Defining Custom Documents</h2><p>It is possible to define custom document constructors, provided they meet the expectations of the printing engine. In short, the custom document combinator <a href="#val-custom"><code>custom</code></a> expects an object of class <a href="class-type-custom/index.html"><code>custom</code></a>. This object must provide three methods. The method <code>requirement</code> must compute the ideal width of the custom document. The methods <code>pretty</code> and <code>compact</code> must render the custom document. For this purpose, they have access to the <a href="class-type-output/index.html" title="output">output channel</a> and to the <a href="#type-state" title="state">state</a> of the printing engine.</p><div class="odoc-spec"><div class="spec type anchored" id="type-requirement"><a href="#type-requirement" class="anchor"></a><code><span><span class="keyword">type</span> requirement</span><span> = int</span></code></div><div class="spec-doc"><p>A width requirement is expressed as an integer. The value <code>max_int</code> is reserved and represents infinity.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-infinity"><a href="#val-infinity" class="anchor"></a><code><span><span class="keyword">val</span> infinity : <a href="#type-requirement">requirement</a></span></code></div><div class="spec-doc"><p><code>infinity</code> represents an infinite width requirement.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-output"><a href="#class-type-output" class="anchor"></a><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-output/index.html">output</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>An output channel is abstractly represented as an object equipped with methods for displaying one character and for displaying a substring.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-state"><a href="#type-state" class="anchor"></a><code><span><span class="keyword">type</span> state</span><span> = </span><span>{</span></code><ol><li id="type-state.width" class="def record field anchored"><a href="#type-state.width" class="anchor"></a><code><span>width : int;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>The line width. This parameter is fixed throughout the execution of the renderer.</p><span class="comment-delim">*)</span></div></li><li id="type-state.ribbon" class="def record field anchored"><a href="#type-state.ribbon" class="anchor"></a><code><span>ribbon : int;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>The ribbon width. This parameter is fixed throughout the execution of the renderer.</p><span class="comment-delim">*)</span></div></li><li id="type-state.last_indent" class="def record field anchored"><a href="#type-state.last_indent" class="anchor"></a><code><span><span class="keyword">mutable</span> last_indent : int;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>The number of blanks that were printed at the beginning of the current line. This field is updated (only) when a hardline is emitted. It is used (only) to determine whether the ribbon width constraint is respected.</p><span class="comment-delim">*)</span></div></li><li id="type-state.line" class="def record field anchored"><a href="#type-state.line" class="anchor"></a><code><span><span class="keyword">mutable</span> line : int;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>The current line. This field is updated (only) when a hardline is emitted. It is not used by the pretty-printing engine itself.</p><span class="comment-delim">*)</span></div></li><li id="type-state.column" class="def record field anchored"><a href="#type-state.column" class="anchor"></a><code><span><span class="keyword">mutable</span> column : int;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>The current column. This field must be updated whenever something is sent to the output channel. It is used (only) to determine whether the width constraint is respected.</p><span class="comment-delim">*)</span></div></li></ol><code><span>}</span></code></div><div class="spec-doc"><p>The internal state of the rendering engine is exposed to the user who wishes to define custom documents. However, its structure is subject to change in future versions of the library.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-custom"><a href="#class-type-custom" class="anchor"></a><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-custom/index.html">custom</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>A custom document is defined by implementing an object of class <a href="class-type-custom/index.html"><code>custom</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-custom"><a href="#val-custom" class="anchor"></a><code><span><span class="keyword">val</span> custom : <span><a href="class-type-custom/index.html">custom</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>custom</code> constructs a custom document out an object of type <a href="class-type-custom/index.html"><code>custom</code></a>.</p></div></div><p>Some of the key functions of the library are exposed, in the hope that they may be useful to authors of custom (leaf and composite) documents. In the case of a leaf document, they can help perform certain basic functions; for instance, applying the function <a href="#val-pretty"><code>pretty</code></a> to the document <a href="#val-hardline"><code>hardline</code></a> is a simple way of printing a hardline, while respecting the indentation parameters and updating the state in a correct manner. Similarly, applying <a href="#val-pretty"><code>pretty</code></a> to the document <code>blank n</code> is a simple way of printing <code>n</code> blank characters. In the case of a composite document (one that contains subdocuments), these functions are essential: they allow computing the width requirement of a subdocument and displaying a subdocument.</p><div class="odoc-spec"><div class="spec value anchored" id="val-requirement"><a href="#val-requirement" class="anchor"></a><code><span><span class="keyword">val</span> requirement : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-requirement">requirement</a></span></code></div><div class="spec-doc"><p><code>requirement doc</code> computes the width requirement of the document <code>doc</code>. It runs in constant time.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pretty"><a href="#val-pretty" class="anchor"></a><code><span><span class="keyword">val</span> pretty : <span><a href="class-type-output/index.html">output</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-state">state</a> <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>bool <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>pretty output state indent flatten doc</code> prints the document <code>doc</code>. See the documentation of the method <code>pretty</code> in the class <a href="class-type-custom/index.html"><code>custom</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-compact"><a href="#val-compact" class="anchor"></a><code><span><span class="keyword">val</span> compact : <span><a href="class-type-output/index.html">output</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>compact output doc</code> prints the document <code>doc</code>. See the documentation of the method <code>compact</code> in the class <a href="class-type-custom/index.html"><code>custom</code></a>.</p></div></div><h2 id="combinators"><a href="#combinators" class="anchor"></a>High-Level Combinators</h2><h3 id="single-characters"><a href="#single-characters" class="anchor"></a>Single Characters</h3><p>The following atomic documents consist of a single character. Each of them is a synonym for the application of <a href="#val-char"><code>char</code></a> to some constant character. For instance, <a href="#val-lparen"><code>lparen</code></a> is a synonym for <code>char '('</code>.</p><div class="odoc-spec"><div class="spec value anchored" id="val-lparen"><a href="#val-lparen" class="anchor"></a><code><span><span class="keyword">val</span> lparen : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rparen"><a href="#val-rparen" class="anchor"></a><code><span><span class="keyword">val</span> rparen : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-langle"><a href="#val-langle" class="anchor"></a><code><span><span class="keyword">val</span> langle : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rangle"><a href="#val-rangle" class="anchor"></a><code><span><span class="keyword">val</span> rangle : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-lbrace"><a href="#val-lbrace" class="anchor"></a><code><span><span class="keyword">val</span> lbrace : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rbrace"><a href="#val-rbrace" class="anchor"></a><code><span><span class="keyword">val</span> rbrace : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-lbracket"><a href="#val-lbracket" class="anchor"></a><code><span><span class="keyword">val</span> lbracket : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rbracket"><a href="#val-rbracket" class="anchor"></a><code><span><span class="keyword">val</span> rbracket : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-squote"><a href="#val-squote" class="anchor"></a><code><span><span class="keyword">val</span> squote : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dquote"><a href="#val-dquote" class="anchor"></a><code><span><span class="keyword">val</span> dquote : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-bquote"><a href="#val-bquote" class="anchor"></a><code><span><span class="keyword">val</span> bquote : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-semi"><a href="#val-semi" class="anchor"></a><code><span><span class="keyword">val</span> semi : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-colon"><a href="#val-colon" class="anchor"></a><code><span><span class="keyword">val</span> colon : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-comma"><a href="#val-comma" class="anchor"></a><code><span><span class="keyword">val</span> comma : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dot"><a href="#val-dot" class="anchor"></a><code><span><span class="keyword">val</span> dot : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-sharp"><a href="#val-sharp" class="anchor"></a><code><span><span class="keyword">val</span> sharp : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-slash"><a href="#val-slash" class="anchor"></a><code><span><span class="keyword">val</span> slash : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-backslash"><a href="#val-backslash" class="anchor"></a><code><span><span class="keyword">val</span> backslash : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-equals"><a href="#val-equals" class="anchor"></a><code><span><span class="keyword">val</span> equals : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-qmark"><a href="#val-qmark" class="anchor"></a><code><span><span class="keyword">val</span> qmark : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-tilde"><a href="#val-tilde" class="anchor"></a><code><span><span class="keyword">val</span> tilde : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-at"><a href="#val-at" class="anchor"></a><code><span><span class="keyword">val</span> at : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-percent"><a href="#val-percent" class="anchor"></a><code><span><span class="keyword">val</span> percent : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dollar"><a href="#val-dollar" class="anchor"></a><code><span><span class="keyword">val</span> dollar : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-caret"><a href="#val-caret" class="anchor"></a><code><span><span class="keyword">val</span> caret : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ampersand"><a href="#val-ampersand" class="anchor"></a><code><span><span class="keyword">val</span> ampersand : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-star"><a href="#val-star" class="anchor"></a><code><span><span class="keyword">val</span> star : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-plus"><a href="#val-plus" class="anchor"></a><code><span><span class="keyword">val</span> plus : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-minus"><a href="#val-minus" class="anchor"></a><code><span><span class="keyword">val</span> minus : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-underscore"><a href="#val-underscore" class="anchor"></a><code><span><span class="keyword">val</span> underscore : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-bang"><a href="#val-bang" class="anchor"></a><code><span><span class="keyword">val</span> bang : <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-bar"><a href="#val-bar" class="anchor"></a><code><span><span class="keyword">val</span> bar : <a href="#type-document">document</a></span></code></div></div><h3 id="delimiters"><a href="#delimiters" class="anchor"></a>Delimiters</h3><div class="odoc-spec"><div class="spec value anchored" id="val-precede"><a href="#val-precede" class="anchor"></a><code><span><span class="keyword">val</span> precede : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>precede l x</code> is <code>l ^^ x</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-terminate"><a href="#val-terminate" class="anchor"></a><code><span><span class="keyword">val</span> terminate : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>terminate r x</code> is <code>x ^^ r</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-enclose"><a href="#val-enclose" class="anchor"></a><code><span><span class="keyword">val</span> enclose : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>enclose l r x</code> is <code>l ^^ x ^^ r</code>.</p></div></div><p>The following combinators enclose a document within a pair of delimiters. They are partial applications of <code>enclose</code>. No whitespace or line break is introduced.</p><div class="odoc-spec"><div class="spec value anchored" id="val-squotes"><a href="#val-squotes" class="anchor"></a><code><span><span class="keyword">val</span> squotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dquotes"><a href="#val-dquotes" class="anchor"></a><code><span><span class="keyword">val</span> dquotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-bquotes"><a href="#val-bquotes" class="anchor"></a><code><span><span class="keyword">val</span> bquotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-braces"><a href="#val-braces" class="anchor"></a><code><span><span class="keyword">val</span> braces : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-parens"><a href="#val-parens" class="anchor"></a><code><span><span class="keyword">val</span> parens : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-angles"><a href="#val-angles" class="anchor"></a><code><span><span class="keyword">val</span> angles : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-brackets"><a href="#val-brackets" class="anchor"></a><code><span><span class="keyword">val</span> brackets : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div></div><h3 id="repetition"><a href="#repetition" class="anchor"></a>Repetition</h3><div class="odoc-spec"><div class="spec value anchored" id="val-twice"><a href="#val-twice" class="anchor"></a><code><span><span class="keyword">val</span> twice : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>twice doc</code> is the document obtained by concatenating two copies of the document <code>doc</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-repeat"><a href="#val-repeat" class="anchor"></a><code><span><span class="keyword">val</span> repeat : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>repeat n doc</code> is the document obtained by concatenating <code>n</code> copies of the document <code>doc</code>.</p></div></div><h3 id="lists-and-options"><a href="#lists-and-options" class="anchor"></a>Lists and Options</h3><div class="odoc-spec"><div class="spec value anchored" id="val-concat"><a href="#val-concat" class="anchor"></a><code><span><span class="keyword">val</span> concat : <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>concat docs</code> is the concatenation of the documents in the list <code>docs</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-separate"><a href="#val-separate" class="anchor"></a><code><span><span class="keyword">val</span> separate : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>separate sep docs</code> is the concatenation of the documents in the list <code>docs</code>. The separator <code>sep</code> is inserted between every two adjacent documents.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-concat_map"><a href="#val-concat_map" class="anchor"></a><code><span><span class="keyword">val</span> concat_map : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>concat_map f xs</code> is equivalent to <code>concat (List.map f xs)</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-separate_map"><a href="#val-separate_map" class="anchor"></a><code><span><span class="keyword">val</span> separate_map : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>separate_map sep f xs</code> is equivalent to <code>separate sep (List.map f xs)</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-separate2"><a href="#val-separate2" class="anchor"></a><code><span><span class="keyword">val</span> separate2 : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>separate2 sep last_sep docs</code> is the concatenation of the documents in the list <code>docs</code>. The separator <code>sep</code> is inserted between every two adjacent documents, except between the last two documents, where the separator <code>last_sep</code> is used instead.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-optional"><a href="#val-optional" class="anchor"></a><code><span><span class="keyword">val</span> optional : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> option</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>optional f None</code> is the empty document. <code>optional f (Some x)</code> is the document <code>f x</code>.</p></div></div><h3 id="text"><a href="#text" class="anchor"></a>Text</h3><div class="odoc-spec"><div class="spec value anchored" id="val-lines"><a href="#val-lines" class="anchor"></a><code><span><span class="keyword">val</span> lines : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code></div><div class="spec-doc"><p><code>lines s</code> is the list of documents obtained by splitting <code>s</code> at newline characters, and turning each line into a document via <code>substring</code>. This code is not UTF-8 aware.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-arbitrary_string"><a href="#val-arbitrary_string" class="anchor"></a><code><span><span class="keyword">val</span> arbitrary_string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>arbitrary_string s</code> is equivalent to <code>separate (break 1) (lines s)</code>. It is analogous to <code>string s</code>, but is valid even if the string <code>s</code> contains newline characters.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-words"><a href="#val-words" class="anchor"></a><code><span><span class="keyword">val</span> words : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code></div><div class="spec-doc"><p><code>words s</code> is the list of documents obtained by splitting <code>s</code> at whitespace characters, and turning each word into a document via <code>substring</code>. All whitespace is discarded. This code is not UTF-8 aware.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-split"><a href="#val-split" class="anchor"></a><code><span><span class="keyword">val</span> split : <span><span>(<span>char <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code></div><div class="spec-doc"><p><code>split ok s</code> splits the string <code>s</code> before and after every occurrence of a character that satisfies the predicate <code>ok</code>. The substrings thus obtained are turned into documents, and a list of documents is returned. No information is lost: the concatenation of the documents yields the original string. This code is not UTF-8 aware.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-flow"><a href="#val-flow" class="anchor"></a><code><span><span class="keyword">val</span> flow : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>flow sep docs</code> separates the documents in the list <code>docs</code> with the separator <code>sep</code> and arranges for a new line to begin whenever a document does not fit on the current line. This is useful for typesetting free-flowing, ragged-right text. A typical choice of <code>sep</code> is <code>break b</code>, where <code>b</code> is the number of spaces that must be inserted between two consecutive words (when displayed on the same line).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-flow_map"><a href="#val-flow_map" class="anchor"></a><code><span><span class="keyword">val</span> flow_map : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>flow_map sep f docs</code> is equivalent to <code>flow sep (List.map f docs)</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-url"><a href="#val-url" class="anchor"></a><code><span><span class="keyword">val</span> url : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>url s</code> is a possible way of displaying the URL <code>s</code>. A potential line break is inserted immediately before and immediately after every slash and dot character.</p></div></div><h3 id="alignment-and-indentation"><a href="#alignment-and-indentation" class="anchor"></a>Alignment and Indentation</h3><div class="odoc-spec"><div class="spec value anchored" id="val-hang"><a href="#val-hang" class="anchor"></a><code><span><span class="keyword">val</span> hang : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>hang n doc</code> is analogous to <code>align</code>, but additionally indents all lines, except the first one, by <code>n</code>. Thus, the text in the box forms a hanging indent.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-prefix"><a href="#val-prefix" class="anchor"></a><code><span><span class="keyword">val</span> prefix : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>prefix n b left right</code> has the following flat layout:</p><pre class="language-ocaml"><code>left right</code></pre><p>and the following non-flat layout:</p><pre class="language-ocaml"><code>left
-  right</code></pre><p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter <code>b</code> controls the number of spaces between <code>left</code> and <code>right</code> (when flat).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-jump"><a href="#val-jump" class="anchor"></a><code><span><span class="keyword">val</span> jump : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>jump n b right</code> is equivalent to <code>prefix n b empty right</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-infix"><a href="#val-infix" class="anchor"></a><code><span><span class="keyword">val</span> infix : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>infix n b middle left right</code> has the following flat layout:</p><pre class="language-ocaml"><code>left middle right</code></pre><p>and the following non-flat layout:</p><pre class="language-ocaml"><code>left middle
-  right</code></pre><p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter <code>b</code> controls the number of spaces between <code>left</code> and <code>middle</code> (always) and between <code>middle</code> and <code>right</code> (when flat).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-surround"><a href="#val-surround" class="anchor"></a><code><span><span class="keyword">val</span> surround : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>surround n b opening contents closing</code> has the following flat layout:</p><pre class="language-ocaml"><code>opening contents closing</code></pre><p>and the following non-flat layout:</p><pre class="language-ocaml"><code>opening
+     <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="module-type-RENDERER/index.html#type-document">document</a> = <a href="#type-document">document</a></span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>This renderer sends its output into a formatter channel.</p>
+         </div>
+      </div>
+      <h2 id="defining"><a href="#defining" class="anchor"></a>Defining Custom Documents</h2>
+      <p>It is possible to define custom document constructors, provided they meet the expectations of the printing
+         engine. In short, the custom document combinator <a href="#val-custom"><code>custom</code></a> expects an
+         object of class <a href="class-type-custom/index.html"><code>custom</code></a>. This object must provide three
+         methods. The method <code>requirement</code> must compute the ideal width of the custom document. The methods
+         <code>pretty</code> and <code>compact</code> must render the custom document. For this purpose, they have
+         access to the <a href="class-type-output/index.html" title="output">output channel</a> and to the <a
+            href="#type-state" title="state">state</a> of the printing engine.</p>
+      <div class="odoc-spec">
+         <div class="spec type anchored" id="type-requirement"><a href="#type-requirement"
+               class="anchor"></a><code><span><span class="keyword">type</span> requirement</span><span> = int</span></code>
+         </div>
+         <div class="spec-doc">
+            <p>A width requirement is expressed as an integer. The value <code>max_int</code> is reserved and represents
+               infinity.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-infinity"><a href="#val-infinity"
+               class="anchor"></a><code><span><span class="keyword">val</span> infinity : <a href="#type-requirement">requirement</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>infinity</code> represents an infinite width requirement.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec class-type anchored" id="class-type-output"><a href="#class-type-output"
+               class="anchor"></a><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-output/index.html">output</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>An output channel is abstractly represented as an object equipped with methods for displaying one
+               character and for displaying a substring.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec type anchored" id="type-state"><a href="#type-state"
+               class="anchor"></a><code><span><span class="keyword">type</span> state</span><span> = </span><span>{</span></code>
+            <ol>
+               <li id="type-state.width" class="def record field anchored"><a href="#type-state.width"
+                     class="anchor"></a><code><span>width : int;</span></code>
+                  <div class="def-doc"><span class="comment-delim">(*</span>
+                     <p>The line width. This parameter is fixed throughout the execution of the renderer.</p><span
+                        class="comment-delim">*)</span>
+                  </div>
+               </li>
+               <li id="type-state.ribbon" class="def record field anchored"><a href="#type-state.ribbon"
+                     class="anchor"></a><code><span>ribbon : int;</span></code>
+                  <div class="def-doc"><span class="comment-delim">(*</span>
+                     <p>The ribbon width. This parameter is fixed throughout the execution of the renderer.</p><span
+                        class="comment-delim">*)</span>
+                  </div>
+               </li>
+               <li id="type-state.last_indent" class="def record field anchored"><a href="#type-state.last_indent"
+                     class="anchor"></a><code><span><span class="keyword">mutable</span> last_indent : int;</span></code>
+                  <div class="def-doc"><span class="comment-delim">(*</span>
+                     <p>The number of blanks that were printed at the beginning of the current line. This field is
+                        updated (only) when a hardline is emitted. It is used (only) to determine whether the ribbon
+                        width constraint is respected.</p><span class="comment-delim">*)</span>
+                  </div>
+               </li>
+               <li id="type-state.line" class="def record field anchored"><a href="#type-state.line"
+                     class="anchor"></a><code><span><span class="keyword">mutable</span> line : int;</span></code>
+                  <div class="def-doc"><span class="comment-delim">(*</span>
+                     <p>The current line. This field is updated (only) when a hardline is emitted. It is not used by the
+                        pretty-printing engine itself.</p><span class="comment-delim">*)</span>
+                  </div>
+               </li>
+               <li id="type-state.column" class="def record field anchored"><a href="#type-state.column"
+                     class="anchor"></a><code><span><span class="keyword">mutable</span> column : int;</span></code>
+                  <div class="def-doc"><span class="comment-delim">(*</span>
+                     <p>The current column. This field must be updated whenever something is sent to the output channel.
+                        It is used (only) to determine whether the width constraint is respected.</p><span
+                        class="comment-delim">*)</span>
+                  </div>
+               </li>
+            </ol><code><span>}</span></code>
+         </div>
+         <div class="spec-doc">
+            <p>The internal state of the rendering engine is exposed to the user who wishes to define custom documents.
+               However, its structure is subject to change in future versions of the library.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec class-type anchored" id="class-type-custom"><a href="#class-type-custom"
+               class="anchor"></a><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-custom/index.html">custom</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>A custom document is defined by implementing an object of class <a
+                  href="class-type-custom/index.html"><code>custom</code></a>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-custom"><a href="#val-custom"
+               class="anchor"></a><code><span><span class="keyword">val</span> custom : <span><a href="class-type-custom/index.html">custom</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>custom</code> constructs a custom document out an object of type <a
+                  href="class-type-custom/index.html"><code>custom</code></a>.</p>
+         </div>
+      </div>
+      <p>Some of the key functions of the library are exposed, in the hope that they may be useful to authors of custom
+         (leaf and composite) documents. In the case of a leaf document, they can help perform certain basic functions;
+         for instance, applying the function <a href="#val-pretty"><code>pretty</code></a> to the document <a
+            href="#val-hardline"><code>hardline</code></a> is a simple way of printing a hardline, while respecting the
+         indentation parameters and updating the state in a correct manner. Similarly, applying <a
+            href="#val-pretty"><code>pretty</code></a> to the document <code>blank n</code> is a simple way of printing
+         <code>n</code> blank characters. In the case of a composite document (one that contains subdocuments), these
+         functions are essential: they allow computing the width requirement of a subdocument and displaying a
+         subdocument.</p>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-requirement"><a href="#val-requirement"
+               class="anchor"></a><code><span><span class="keyword">val</span> requirement : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-requirement">requirement</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>requirement doc</code> computes the width requirement of the document <code>doc</code>. It runs in
+               constant time.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-pretty"><a href="#val-pretty"
+               class="anchor"></a><code><span><span class="keyword">val</span> pretty : <span><a href="class-type-output/index.html">output</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-state">state</a> <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>bool <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>pretty output state indent flatten doc</code> prints the document <code>doc</code>. See the
+               documentation of the method <code>pretty</code> in the class <a
+                  href="class-type-custom/index.html"><code>custom</code></a>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-compact"><a href="#val-compact"
+               class="anchor"></a><code><span><span class="keyword">val</span> compact : <span><a href="class-type-output/index.html">output</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>compact output doc</code> prints the document <code>doc</code>. See the documentation of the method
+               <code>compact</code> in the class <a href="class-type-custom/index.html"><code>custom</code></a>.</p>
+         </div>
+      </div>
+      <h2 id="combinators"><a href="#combinators" class="anchor"></a>High-Level Combinators</h2>
+      <h3 id="single-characters"><a href="#single-characters" class="anchor"></a>Single Characters</h3>
+      <p>The following atomic documents consist of a single character. Each of them is a synonym for the application of
+         <a href="#val-char"><code>char</code></a> to some constant character. For instance, <a
+            href="#val-lparen"><code>lparen</code></a> is a synonym for <code>char '('</code>.</p>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-lparen"><a href="#val-lparen"
+               class="anchor"></a><code><span><span class="keyword">val</span> lparen : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-rparen"><a href="#val-rparen"
+               class="anchor"></a><code><span><span class="keyword">val</span> rparen : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-langle"><a href="#val-langle"
+               class="anchor"></a><code><span><span class="keyword">val</span> langle : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-rangle"><a href="#val-rangle"
+               class="anchor"></a><code><span><span class="keyword">val</span> rangle : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-lbrace"><a href="#val-lbrace"
+               class="anchor"></a><code><span><span class="keyword">val</span> lbrace : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-rbrace"><a href="#val-rbrace"
+               class="anchor"></a><code><span><span class="keyword">val</span> rbrace : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-lbracket"><a href="#val-lbracket"
+               class="anchor"></a><code><span><span class="keyword">val</span> lbracket : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-rbracket"><a href="#val-rbracket"
+               class="anchor"></a><code><span><span class="keyword">val</span> rbracket : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-squote"><a href="#val-squote"
+               class="anchor"></a><code><span><span class="keyword">val</span> squote : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-dquote"><a href="#val-dquote"
+               class="anchor"></a><code><span><span class="keyword">val</span> dquote : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-bquote"><a href="#val-bquote"
+               class="anchor"></a><code><span><span class="keyword">val</span> bquote : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-semi"><a href="#val-semi"
+               class="anchor"></a><code><span><span class="keyword">val</span> semi : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-colon"><a href="#val-colon"
+               class="anchor"></a><code><span><span class="keyword">val</span> colon : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-comma"><a href="#val-comma"
+               class="anchor"></a><code><span><span class="keyword">val</span> comma : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-dot"><a href="#val-dot"
+               class="anchor"></a><code><span><span class="keyword">val</span> dot : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-sharp"><a href="#val-sharp"
+               class="anchor"></a><code><span><span class="keyword">val</span> sharp : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-slash"><a href="#val-slash"
+               class="anchor"></a><code><span><span class="keyword">val</span> slash : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-backslash"><a href="#val-backslash"
+               class="anchor"></a><code><span><span class="keyword">val</span> backslash : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-equals"><a href="#val-equals"
+               class="anchor"></a><code><span><span class="keyword">val</span> equals : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-qmark"><a href="#val-qmark"
+               class="anchor"></a><code><span><span class="keyword">val</span> qmark : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-tilde"><a href="#val-tilde"
+               class="anchor"></a><code><span><span class="keyword">val</span> tilde : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-at"><a href="#val-at"
+               class="anchor"></a><code><span><span class="keyword">val</span> at : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-percent"><a href="#val-percent"
+               class="anchor"></a><code><span><span class="keyword">val</span> percent : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-dollar"><a href="#val-dollar"
+               class="anchor"></a><code><span><span class="keyword">val</span> dollar : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-caret"><a href="#val-caret"
+               class="anchor"></a><code><span><span class="keyword">val</span> caret : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-ampersand"><a href="#val-ampersand"
+               class="anchor"></a><code><span><span class="keyword">val</span> ampersand : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-star"><a href="#val-star"
+               class="anchor"></a><code><span><span class="keyword">val</span> star : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-plus"><a href="#val-plus"
+               class="anchor"></a><code><span><span class="keyword">val</span> plus : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-minus"><a href="#val-minus"
+               class="anchor"></a><code><span><span class="keyword">val</span> minus : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-underscore"><a href="#val-underscore"
+               class="anchor"></a><code><span><span class="keyword">val</span> underscore : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-bang"><a href="#val-bang"
+               class="anchor"></a><code><span><span class="keyword">val</span> bang : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-bar"><a href="#val-bar"
+               class="anchor"></a><code><span><span class="keyword">val</span> bar : <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <h3 id="delimiters"><a href="#delimiters" class="anchor"></a>Delimiters</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-precede"><a href="#val-precede"
+               class="anchor"></a><code><span><span class="keyword">val</span> precede : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>precede l x</code> is <code>l ^^ x</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-terminate"><a href="#val-terminate"
+               class="anchor"></a><code><span><span class="keyword">val</span> terminate : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>terminate r x</code> is <code>x ^^ r</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-enclose"><a href="#val-enclose"
+               class="anchor"></a><code><span><span class="keyword">val</span> enclose : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>enclose l r x</code> is <code>l ^^ x ^^ r</code>.</p>
+         </div>
+      </div>
+      <p>The following combinators enclose a document within a pair of delimiters. They are partial applications of
+         <code>enclose</code>. No whitespace or line break is introduced.</p>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-squotes"><a href="#val-squotes"
+               class="anchor"></a><code><span><span class="keyword">val</span> squotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-dquotes"><a href="#val-dquotes"
+               class="anchor"></a><code><span><span class="keyword">val</span> dquotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-bquotes"><a href="#val-bquotes"
+               class="anchor"></a><code><span><span class="keyword">val</span> bquotes : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-braces"><a href="#val-braces"
+               class="anchor"></a><code><span><span class="keyword">val</span> braces : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-parens"><a href="#val-parens"
+               class="anchor"></a><code><span><span class="keyword">val</span> parens : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-angles"><a href="#val-angles"
+               class="anchor"></a><code><span><span class="keyword">val</span> angles : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-brackets"><a href="#val-brackets"
+               class="anchor"></a><code><span><span class="keyword">val</span> brackets : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+      </div>
+      <h3 id="repetition"><a href="#repetition" class="anchor"></a>Repetition</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-twice"><a href="#val-twice"
+               class="anchor"></a><code><span><span class="keyword">val</span> twice : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>twice doc</code> is the document obtained by concatenating two copies of the document
+               <code>doc</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-repeat"><a href="#val-repeat"
+               class="anchor"></a><code><span><span class="keyword">val</span> repeat : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>repeat n doc</code> is the document obtained by concatenating <code>n</code> copies of the document
+               <code>doc</code>.</p>
+         </div>
+      </div>
+      <h3 id="lists-and-options"><a href="#lists-and-options" class="anchor"></a>Lists and Options</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-concat"><a href="#val-concat"
+               class="anchor"></a><code><span><span class="keyword">val</span> concat : <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>concat docs</code> is the concatenation of the documents in the list <code>docs</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-separate"><a href="#val-separate"
+               class="anchor"></a><code><span><span class="keyword">val</span> separate : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>separate sep docs</code> is the concatenation of the documents in the list <code>docs</code>. The
+               separator <code>sep</code> is inserted between every two adjacent documents.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-concat_map"><a href="#val-concat_map"
+               class="anchor"></a><code><span><span class="keyword">val</span> concat_map : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>concat_map f xs</code> is equivalent to <code>concat (List.map f xs)</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-separate_map"><a href="#val-separate_map"
+               class="anchor"></a><code><span><span class="keyword">val</span> separate_map : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>separate_map sep f xs</code> is equivalent to <code>separate sep (List.map f xs)</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-separate2"><a href="#val-separate2"
+               class="anchor"></a><code><span><span class="keyword">val</span> separate2 : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>separate2 sep last_sep docs</code> is the concatenation of the documents in the list
+               <code>docs</code>. The separator <code>sep</code> is inserted between every two adjacent documents,
+               except between the last two documents, where the separator <code>last_sep</code> is used instead.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-optional"><a href="#val-optional"
+               class="anchor"></a><code><span><span class="keyword">val</span> optional : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> option</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>optional f None</code> is the empty document. <code>optional f (Some x)</code> is the document
+               <code>f x</code>.</p>
+         </div>
+      </div>
+      <h3 id="text"><a href="#text" class="anchor"></a>Text</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-lines"><a href="#val-lines"
+               class="anchor"></a><code><span><span class="keyword">val</span> lines : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>lines s</code> is the list of documents obtained by splitting <code>s</code> at newline characters,
+               and turning each line into a document via <code>substring</code>. This code is not UTF-8 aware.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-arbitrary_string"><a href="#val-arbitrary_string"
+               class="anchor"></a><code><span><span class="keyword">val</span> arbitrary_string : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>arbitrary_string s</code> is equivalent to <code>separate (break 1) (lines s)</code>. It is
+               analogous to <code>string s</code>, but is valid even if the string <code>s</code> contains newline
+               characters.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-words"><a href="#val-words"
+               class="anchor"></a><code><span><span class="keyword">val</span> words : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>words s</code> is the list of documents obtained by splitting <code>s</code> at whitespace
+               characters, and turning each word into a document via <code>substring</code>. All whitespace is
+               discarded. This code is not UTF-8 aware.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-split"><a href="#val-split"
+               class="anchor"></a><code><span><span class="keyword">val</span> split : <span><span>(<span>char <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> list</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>split ok s</code> splits the string <code>s</code> before and after every occurrence of a character
+               that satisfies the predicate <code>ok</code>. The substrings thus obtained are turned into documents, and
+               a list of documents is returned. No information is lost: the concatenation of the documents yields the
+               original string. This code is not UTF-8 aware.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-flow"><a href="#val-flow"
+               class="anchor"></a><code><span><span class="keyword">val</span> flow : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>flow sep docs</code> separates the documents in the list <code>docs</code> with the separator
+               <code>sep</code> and arranges for a new line to begin whenever a document does not fit on the current
+               line. This is useful for typesetting free-flowing, ragged-right text. A typical choice of
+               <code>sep</code> is <code>break b</code>, where <code>b</code> is the number of spaces that must be
+               inserted between two consecutive words (when displayed on the same line).</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-flow_map"><a href="#val-flow_map"
+               class="anchor"></a><code><span><span class="keyword">val</span> flow_map : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>flow_map sep f docs</code> is equivalent to <code>flow sep (List.map f docs)</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-url"><a href="#val-url"
+               class="anchor"></a><code><span><span class="keyword">val</span> url : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>url s</code> is a possible way of displaying the URL <code>s</code>. A potential line break is
+               inserted immediately before and immediately after every slash and dot character.</p>
+         </div>
+      </div>
+      <h3 id="alignment-and-indentation"><a href="#alignment-and-indentation" class="anchor"></a>Alignment and
+         Indentation</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-hang"><a href="#val-hang"
+               class="anchor"></a><code><span><span class="keyword">val</span> hang : <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>hang n doc</code> is analogous to <code>align</code>, but additionally indents all lines, except
+               the first one, by <code>n</code>. Thus, the text in the box forms a hanging indent.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-prefix"><a href="#val-prefix"
+               class="anchor"></a><code><span><span class="keyword">val</span> prefix : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>prefix n b left right</code> has the following flat layout:</p>
+            <pre class="language-ocaml"><code>left right</code></pre>
+            <p>and the following non-flat layout:</p>
+            <pre class="language-ocaml"><code>left
+  right</code></pre>
+            <p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter
+               <code>b</code> controls the number of spaces between <code>left</code> and <code>right</code> (when
+               flat).</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-jump"><a href="#val-jump"
+               class="anchor"></a><code><span><span class="keyword">val</span> jump : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>jump n b right</code> is equivalent to <code>prefix n b empty right</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-infix"><a href="#val-infix"
+               class="anchor"></a><code><span><span class="keyword">val</span> infix : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>infix n b middle left right</code> has the following flat layout:</p>
+            <pre class="language-ocaml"><code>left middle right</code></pre>
+            <p>and the following non-flat layout:</p>
+            <pre class="language-ocaml"><code>left middle
+  right</code></pre>
+            <p>The parameter <code>n</code> controls the nesting of <code>right</code> (when not flat). The parameter
+               <code>b</code> controls the number of spaces between <code>left</code> and <code>middle</code> (always)
+               and between <code>middle</code> and <code>right</code> (when flat).</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-surround"><a href="#val-surround"
+               class="anchor"></a><code><span><span class="keyword">val</span> surround : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>surround n b opening contents closing</code> has the following flat layout:</p>
+            <pre class="language-ocaml"><code>opening contents closing</code></pre>
+            <p>and the following non-flat layout:</p>
+            <pre class="language-ocaml"><code>opening
   contents
-  closing</code></pre><p>The parameter <code>n</code> controls the nesting of <code>contents</code> (when not flat). The parameter <code>b</code> controls the number of spaces between <code>opening</code> and <code>contents</code> and between <code>contents</code> and <code>closing</code> (when flat).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-soft_surround"><a href="#val-soft_surround" class="anchor"></a><code><span><span class="keyword">val</span> soft_surround : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>soft_surround</code> is analogous to <code>surround</code>, but involves more than one group, so it offers possibilities other than the completely flat layout (where <code>opening</code>, <code>contents</code>, and <code>closing</code> appear on a single line) and the completely developed layout (where <code>opening</code>, <code>contents</code>, and <code>closing</code> appear on separate lines). It tries to place the beginning of <code>contents</code> on the same line as <code>opening</code>, and to place <code>closing</code> on the same line as the end of <code>contents</code>, if possible.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-surround_separate"><a href="#val-surround_separate" class="anchor"></a><code><span><span class="keyword">val</span> surround_separate : 
+  closing</code></pre>
+            <p>The parameter <code>n</code> controls the nesting of <code>contents</code> (when not flat). The parameter
+               <code>b</code> controls the number of spaces between <code>opening</code> and <code>contents</code> and
+               between <code>contents</code> and <code>closing</code> (when flat).</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-soft_surround"><a href="#val-soft_surround"
+               class="anchor"></a><code><span><span class="keyword">val</span> soft_surround : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>soft_surround</code> is analogous to <code>surround</code>, but involves more than one group, so it
+               offers possibilities other than the completely flat layout (where <code>opening</code>,
+               <code>contents</code>, and <code>closing</code> appear on a single line) and the completely developed
+               layout (where <code>opening</code>, <code>contents</code>, and <code>closing</code> appear on separate
+               lines). It tries to place the beginning of <code>contents</code> on the same line as
+               <code>opening</code>, and to place <code>closing</code> on the same line as the end of
+               <code>contents</code>, if possible.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-surround_separate"><a href="#val-surround_separate"
+               class="anchor"></a><code><span><span class="keyword">val</span> surround_separate : 
   <span>int <span class="arrow">&#45;&gt;</span></span>
   <span>int <span class="arrow">&#45;&gt;</span></span>
   <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span>
@@ -17,7 +927,16 @@
   <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span>
   <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span>
   <span><span><a href="#type-document">document</a> list</span> <span class="arrow">&#45;&gt;</span></span>
-  <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>surround_separate n b void opening sep closing docs</code> is equivalent to <code>surround n b opening (separate sep docs) closing</code>, except when the list <code>docs</code> is empty, in which case it reduces to <code>void</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-surround_separate_map"><a href="#val-surround_separate_map" class="anchor"></a><code><span><span class="keyword">val</span> surround_separate_map : 
+  <a href="#type-document">document</a></span></code></div>
+         <div class="spec-doc">
+            <p><code>surround_separate n b void opening sep closing docs</code> is equivalent to
+               <code>surround n b opening (separate sep docs) closing</code>, except when the list <code>docs</code> is
+               empty, in which case it reduces to <code>void</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-surround_separate_map"><a href="#val-surround_separate_map"
+               class="anchor"></a><code><span><span class="keyword">val</span> surround_separate_map : 
   <span>int <span class="arrow">&#45;&gt;</span></span>
   <span>int <span class="arrow">&#45;&gt;</span></span>
   <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span>
@@ -26,4 +945,49 @@
   <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span>
   <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a>)</span> <span class="arrow">&#45;&gt;</span></span>
   <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span>
-  <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>surround_separate_map n b void opening sep closing f xs</code> is equivalent to <code>surround_separate n b void opening sep closing (List.map f xs)</code>.</p></div></div><h3 id="short-hands"><a href="#short-hands" class="anchor"></a>Short-Hands</h3><div class="odoc-spec"><div class="spec value anchored" id="val-(!^)"><a href="#val-(!^)" class="anchor"></a><code><span><span class="keyword">val</span> (!^) : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>!^s</code> is a short-hand for <code>string s</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-(^/^)"><a href="#val-(^/^)" class="anchor"></a><code><span><span class="keyword">val</span> (^/^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>x ^/^ y</code> separates <code>x</code> and <code>y</code> with a breakable space. It is a short-hand for <code>x ^^ break 1 ^^ y</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-(^//^)"><a href="#val-(^//^)" class="anchor"></a><code><span><span class="keyword">val</span> (^//^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code></div><div class="spec-doc"><p><code>x ^//^ y</code> is a short-hand for <code>prefix 2 1 x y</code>.</p></div></div><h2 id="ocaml"><a href="#ocaml" class="anchor"></a>Printing OCaml Values</h2><div class="odoc-spec"><div class="spec module anchored" id="module-OCaml"><a href="#module-OCaml" class="anchor"></a><code><span><span class="keyword">module</span> <a href="OCaml/index.html">OCaml</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>This module offers document combinators that help print OCaml values. The strings produced by rendering these documents are supposed to be accepted by the OCaml parser as valid values.</p></div></div></div></body></html>
+  <a href="#type-document">document</a></span></code></div>
+         <div class="spec-doc">
+            <p><code>surround_separate_map n b void opening sep closing f xs</code> is equivalent to
+               <code>surround_separate n b void opening sep closing (List.map f xs)</code>.</p>
+         </div>
+      </div>
+      <h3 id="short-hands"><a href="#short-hands" class="anchor"></a>Short-Hands</h3>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-(!^)"><a href="#val-(!^)"
+               class="anchor"></a><code><span><span class="keyword">val</span> (!^) : <span>string <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>!^s</code> is a short-hand for <code>string s</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-(^/^)"><a href="#val-(^/^)"
+               class="anchor"></a><code><span><span class="keyword">val</span> (^/^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>x ^/^ y</code> separates <code>x</code> and <code>y</code> with a breakable space. It is a
+               short-hand for <code>x ^^ break 1 ^^ y</code>.</p>
+         </div>
+      </div>
+      <div class="odoc-spec">
+         <div class="spec value anchored" id="val-(^//^)"><a href="#val-(^//^)"
+               class="anchor"></a><code><span><span class="keyword">val</span> (^//^) : <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-document">document</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-document">document</a></span></code>
+         </div>
+         <div class="spec-doc">
+            <p><code>x ^//^ y</code> is a short-hand for <code>prefix 2 1 x y</code>.</p>
+         </div>
+      </div>
+      <h2 id="ocaml"><a href="#ocaml" class="anchor"></a>Printing OCaml Values</h2>
+      <div class="odoc-spec">
+         <div class="spec module anchored" id="module-OCaml"><a href="#module-OCaml"
+               class="anchor"></a><code><span><span class="keyword">module</span> <a href="OCaml/index.html">OCaml</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code>
+         </div>
+         <div class="spec-doc">
+            <p>This module offers document combinators that help print OCaml values. The strings produced by rendering
+               these documents are supposed to be accepted by the OCaml parser as valid values.</p>
+         </div>
+      </div>
+   </div>
+</body>
+
+</html>
